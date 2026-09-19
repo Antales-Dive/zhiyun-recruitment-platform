@@ -1,0 +1,5 @@
+姓名：李四
+邮箱 li@example.com
+电话 13800138000
+技能：Python FastAPI
+3 年经验

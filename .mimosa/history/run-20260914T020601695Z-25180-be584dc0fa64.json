@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260914T020601695Z-25180-be584dc0fa64",
+  "runStatus": "inconclusive",
+  "errors": [
+    "candidate-select:apps/web/src/features/interviews/InterviewsPage.tsx: candidate_limit_exceeded: 17 changed reviewable file(s) were not scanned because the limit is 20",
+    "baseline-read:apps/web/tests/client.test.ts: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/tests/login.test.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/tests/sse.test.ts: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/tests/e2e/admin-flow.test.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/main.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/hooks/useTaskEvents.ts: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/features/scheduling/SchedulingPage.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/features/questionnaires/QuestionnairesPage.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/features/pipeline/PipelinePage.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/features/knowledge/KnowledgePage.tsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:apps/web/src/features/jobs/JobsPage.tsx: baseline_snapshot_unreadable: file is missing from task baseline"
+  ],
+  "target": ".",
+  "revision": null,
+  "diffHash": "7a6770115a5fb6edd0b0e9137d0243220250ac07bbbdd7454e84fefa5b491a6c",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-09-14T02:06:01.695Z",
+  "timing": {
+    "startedAt": "2026-09-14T02:05:59.896Z",
+    "completedAt": "2026-09-14T02:06:01.695Z",
+    "durationMs": 1799
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 11,
+    "bySeverity": {
+      "low": 11
+    },
+    "byStatus": {
+      "candidate": 11
+    }
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "candidate_limit_exceeded": 1,
+      "baseline_snapshot_unreadable": 11,
+      "project_check_failed": 12
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_5cc02700-caeb-42cd-bc6b-8a693eb4dffb-20260914T020601695Z-25180-be584dc0fa64.json"
+}

@@ -1,0 +1,135 @@
+/** 知识库：文档上传、版本、发布与撤回。 */
+import { useState, type FormEvent } from "react";
+import { api } from "../../api/client";
+import { EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from "../../components/states";
+import { useTaskEvents } from "../../hooks/useTaskEvents";
+
+export interface KnowledgeDocumentInfo {
+  id: string;
+  title: string;
+  status: string;
+  active_version_id: string | null;
+  versions?: Array<{ id: string; version_number: number; status: string }>;
+}
+
+export function KnowledgePage() {
+  const [documents, setDocuments] = useState<KnowledgeDocumentInfo[] | null>(null);
+  const [title, setTitle] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [lastTaskId, setLastTaskId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const taskState = useTaskEvents(lastTaskId);
+
+  async function refresh() {
+    try {
+      const data = await api<KnowledgeDocumentInfo[]>("/api/v1/knowledge/documents");
+      setDocuments(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败");
+    }
+  }
+
+  async function uploadDocument(event: FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    if (!file) {
+      setMessage("请选择文件");
+      return;
+    }
+    const form = new FormData();
+    form.append("title", title);
+    form.append("file", file);
+    try {
+      const data = await api<{ task_id: string }>("/api/v1/knowledge/documents", {
+        method: "POST",
+        body: form,
+      });
+      setLastTaskId(data.task_id);
+      setMessage("文档已上传，等待摄取完成");
+      setTitle("");
+      setFile(null);
+      await refresh();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "上传失败");
+    }
+  }
+
+  async function publish(documentId: string) {
+    try {
+      await api(`/api/v1/knowledge/documents/${documentId}/publish`, { method: "POST" });
+      setMessage("已发布");
+      await refresh();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "发布失败");
+    }
+  }
+
+  async function withdraw(versionId: string) {
+    const reason = window.prompt("撤回原因（必填）");
+    if (!reason) return;
+    const form = new FormData();
+    form.append("reason", reason);
+    try {
+      await api(`/api/v1/knowledge/versions/${versionId}/withdraw`, { method: "POST", body: form });
+      setMessage("已撤回");
+      await refresh();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "撤回失败");
+    }
+  }
+
+  return (
+    <section>
+      <PageHeader title="知识库" />
+      <form className="card form-grid" onSubmit={uploadDocument} aria-label="上传知识文档">
+        <label>
+          文档标题
+          <input required value={title} onChange={(event) => setTitle(event.target.value)} />
+        </label>
+        <label>
+          文件（txt/md/docx/pdf）
+          <input
+            type="file"
+            accept=".txt,.md,.docx,.pdf"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          />
+        </label>
+        {message ? <p className="form-note">{message}</p> : null}
+        {taskState.snapshot ? <p className="form-note">摄取进度：{taskState.snapshot.progress}%</p> : null}
+        <button type="submit" className="button button-primary">
+          上传文档
+        </button>
+      </form>
+      {error ? <ErrorState message={error} retry={() => void refresh()} /> : null}
+      {documents === null && !error ? <LoadingState /> : null}
+      {documents && documents.length === 0 ? <EmptyState title="暂无知识文档" /> : null}
+      {documents && documents.length > 0 ? (
+        <ul className="list">
+          {documents.map((document) => (
+            <li className="card list-item" key={document.id}>
+              <div>
+                <strong>{document.title}</strong>
+                <StatusBadge status={document.status} />
+              </div>
+              <div className="actions">
+                <button type="button" className="button" onClick={() => void publish(document.id)} disabled={document.status === "PUBLISHED"}>
+                  发布
+                </button>
+                {document.active_version_id ? (
+                  <button
+                    type="button"
+                    className="button button-danger"
+                    onClick={() => void withdraw(document.active_version_id!)}
+                  >
+                    撤回
+                  </button>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}

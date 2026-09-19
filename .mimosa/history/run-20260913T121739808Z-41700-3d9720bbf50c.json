@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260913T121739808Z-41700-3d9720bbf50c",
+  "runStatus": "inconclusive",
+  "errors": [
+    "bash-discovery:apps/api/app/domains/identity/principal.py: bash_discovery_truncated: changed-file discovery exceeded 80 files",
+    "candidate-select:apps/api/app/domains/audit/redaction.py: candidate_limit_exceeded: 109 changed reviewable file(s) were not scanned because the limit is 20"
+  ],
+  "target": ".",
+  "revision": null,
+  "diffHash": "8a74b117477b1c7824eb417eb7c422d6ac7c0483e1b21c83f2939a7a0ea26455",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-09-13T12:17:39.808Z",
+  "timing": {
+    "startedAt": "2026-09-13T12:17:38.290Z",
+    "completedAt": "2026-09-13T12:17:39.808Z",
+    "durationMs": 1518
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 19,
+    "bySeverity": {
+      "high": 12,
+      "medium": 7
+    },
+    "byStatus": {
+      "static_verified": 11,
+      "candidate": 8
+    }
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "bash_discovery_truncated": 1,
+      "candidate_limit_exceeded": 1,
+      "project_check_failed": 2
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_5cc02700-caeb-42cd-bc6b-8a693eb4dffb-20260913T121739808Z-41700-3d9720bbf50c.json"
+}

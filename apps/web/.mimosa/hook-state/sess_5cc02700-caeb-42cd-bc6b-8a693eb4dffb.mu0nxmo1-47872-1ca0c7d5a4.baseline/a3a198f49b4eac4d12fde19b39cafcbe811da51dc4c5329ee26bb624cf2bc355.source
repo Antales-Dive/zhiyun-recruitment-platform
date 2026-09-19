@@ -1,0 +1,124 @@
+/** 面试管理：创建会话、发送邀请、人工接管。 */
+import { useEffect, useState, type FormEvent } from "react";
+import { api } from "../../api/client";
+import { EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from "../../components/states";
+import type { CandidateInfo } from "../candidates/CandidatesPage";
+
+export interface InterviewSessionInfo {
+  id: string;
+  candidate_id: string;
+  status: string;
+  taken_over_by?: string | null;
+}
+
+export function InterviewsPage() {
+  const [sessions, setSessions] = useState<InterviewSessionInfo[] | null>(null);
+  const [candidates, setCandidates] = useState<CandidateInfo[]>([]);
+  const [selectedCandidate, setSelectedCandidate] = useState("");
+  const [questions, setQuestions] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+
+  async function refresh() {
+    try {
+      const nextCandidates = await api<CandidateInfo[]>("/api/v1/candidates");
+      setCandidates(nextCandidates);
+      if (!selectedCandidate && nextCandidates[0]) setSelectedCandidate(nextCandidates[0].id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败");
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  async function createSession(event: FormEvent) {
+    event.preventDefault();
+    setMessage(null);
+    setInviteLink(null);
+    try {
+      const created = await api<{ session_id: string }>("/api/v1/interviews", {
+        method: "POST",
+        body: JSON.stringify({
+          candidate_id: selectedCandidate,
+          job_version_id: "",
+          resume_version_id: "",
+          plan: {
+            questions: questions.split("\n").map((line) => line.trim()).filter(Boolean),
+            max_rounds: 8,
+            forbidden: [],
+          },
+        }),
+      });
+      const invitation = await api<{ token: string }>(`/api/v1/interviews/${created.session_id}/invite`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setInviteLink(`${window.location.origin}/public/interviews/${invitation.token}`);
+      setMessage("面试会话已创建并发送邀请");
+      await refreshSessions();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "创建失败");
+    }
+  }
+
+  async function refreshSessions() {
+    try {
+      const data = await api<InterviewSessionInfo[]>("/api/v1/interviews");
+      setSessions(data);
+    } catch {
+      setSessions([]);
+    }
+  }
+
+  useEffect(() => {
+    void refreshSessions();
+  }, []);
+
+  return (
+    <section>
+      <PageHeader title="AI 文字面试" />
+      <form className="card form-grid" onSubmit={createSession} aria-label="创建面试">
+        <label>
+          候选人
+          <select value={selectedCandidate} onChange={(event) => setSelectedCandidate(event.target.value)}>
+            {candidates.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          面试问题（每行一题）
+          <textarea value={questions} onChange={(event) => setQuestions(event.target.value)} />
+        </label>
+        {message ? <p className="form-note">{message}</p> : null}
+        {inviteLink ? (
+          <p className="form-note">
+            候选人链接：<code>{inviteLink}</code>
+          </p>
+        ) : null}
+        <button type="submit" className="button button-primary">
+          创建并邀请
+        </button>
+      </form>
+      {error ? <ErrorState message={error} /> : null}
+      {sessions === null ? <LoadingState /> : null}
+      {sessions && sessions.length === 0 ? <EmptyState title="暂无面试会话" /> : null}
+      {sessions && sessions.length > 0 ? (
+        <ul className="list">
+          {sessions.map((session) => (
+            <li className="card list-item" key={session.id}>
+              <span className="muted">会话 {session.id.slice(0, 8)}</span>
+              <StatusBadge status={session.status} />
+              {session.taken_over_by ? <span className="muted">已由 {session.taken_over_by} 接管</span> : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}

@@ -1,0 +1,88 @@
+/** 任务事件订阅：SSE 重连 + 快照回退（01-requirements.md UI 要求）。 */
+import { useEffect, useRef, useState } from "react";
+import { api, isAbortError } from "../api/client";
+import { connectSse, type SseEvent } from "../api/sse";
+
+export interface TaskSnapshot {
+  task_id: string;
+  status: string;
+  progress: number;
+  current_attempt?: number;
+  last_error_code?: string | null;
+  attempts?: Array<{ attempt_no: number; status: string; error_code?: string | null; error_summary?: string | null }>;
+}
+
+export interface TaskEventState {
+  snapshot: TaskSnapshot | null;
+  connectionState: "connecting" | "open" | "reconnecting" | "closed" | "polling";
+  error: string | null;
+}
+
+/**
+ * 订阅任务 SSE；断线重连补发；重连失败后回退到轮询快照（不重复创建任务）。
+ */
+export function useTaskEvents(taskId: string | null): TaskEventState {
+  const [snapshot, setSnapshot] = useState<TaskSnapshot | null>(null);
+  const [connectionState, setConnectionState] = useState<TaskEventState["connectionState"]>("connecting");
+  const [error, setError] = useState<string | null>(null);
+  const lastEventIdRef = useRef<number | null>(null);
+  const closedRef = useRef(false);
+
+  useEffect(() => {
+    if (!taskId) return;
+    closedRef.current = false;
+    lastEventIdRef.current = null;
+    setError(null);
+    const controller = new AbortController();
+
+    const loadSnapshot = async () => {
+      try {
+        const data = await api<TaskSnapshot>(`/api/v1/tasks/${taskId}`, { signal: controller.signal });
+        setSnapshot(data);
+      } catch (err) {
+        if (isAbortError(err)) return;
+        setError(err instanceof Error ? err.message : "任务快照加载失败");
+      }
+    };
+    void loadSnapshot();
+
+    const connection = connectSse(
+      `/api/v1/tasks/${taskId}/events`,
+      (event: SseEvent) => {
+        lastEventIdRef.current = event.id;
+        if (event.event === "task.progress" || event.event === "task.completed" || event.event === "task.failed") {
+          setSnapshot((prev) => ({
+            ...(prev ?? { task_id: taskId, status: "PENDING", progress: 0 }),
+            status: String(event.data.status ?? prev?.status ?? "PROCESSING"),
+            progress: Number(event.data.progress ?? prev?.progress ?? 0),
+          }));
+        }
+      },
+      (state) => {
+        if (state === "closed") {
+          closedRef.current = true;
+          setConnectionState("polling");
+        } else {
+          setConnectionState(state);
+        }
+      },
+      {
+        getLastEventId: () => lastEventIdRef.current,
+      },
+    );
+
+    const pollTimer = window.setInterval(() => {
+      if (closedRef.current && taskId) {
+        void loadSnapshot();
+      }
+    }, 3000);
+
+    return () => {
+      controller.abort();
+      connection.close();
+      window.clearInterval(pollTimer);
+    };
+  }, [taskId]);
+
+  return { snapshot, connectionState, error };
+}

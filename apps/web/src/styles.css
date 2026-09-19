@@ -1,0 +1,433 @@
+:root {
+  font-family: Inter, "Microsoft YaHei", sans-serif;
+  color: #1f2438;
+  background: #eef2fb;
+  --primary: #4c76f4;
+  --primary-dark: #3a5fd8;
+  --danger: #c0392b;
+  --success: #1e8e5a;
+  --warn: #9a6b13;
+  --muted: #6b7488;
+  --border: #dde3f0;
+  --surface: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef2fb;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid #4c76f4;
+  outline-offset: 2px;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 232px;
+  background: #262b42;
+  color: #aeb6cf;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 4px 8px 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar a {
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: #aeb6cf;
+  text-decoration: none;
+  font-size: 14px;
+  display: block;
+}
+
+.sidebar a:hover {
+  background: #333a56;
+  color: #fff;
+}
+
+.sidebar a.active {
+  color: #fff;
+  background: linear-gradient(100deg, #536ff3, #8052ef);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.content {
+  flex: 1;
+  padding: 32px 40px 64px;
+  max-width: 1400px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 22px;
+  gap: 16px;
+}
+
+.page-header h1 {
+  font-size: 26px;
+  margin: 0;
+}
+
+.page-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 10px 24px rgba(83, 95, 164, 0.08);
+}
+
+.form-grid {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #4a5268;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #1f2438;
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px #e9ebff;
+}
+
+.button {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #f5f7fc;
+  color: #1f2438;
+  font-weight: 600;
+}
+
+.button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.button-primary {
+  background: linear-gradient(100deg, #4c76f4, #8750ed);
+  color: #fff;
+  border: 0;
+}
+
+.button-primary:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.button-danger {
+  background: #fdecea;
+  color: var(--danger);
+  border-color: #f5c6c0;
+}
+
+.button-ghost {
+  background: transparent;
+  border: 1px solid #414761;
+  color: #aeb6cf;
+}
+
+.state {
+  padding: 26px;
+  text-align: center;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+
+.state-loading {
+  color: var(--muted);
+}
+
+.state-empty {
+  color: var(--muted);
+}
+
+.state-error {
+  background: #fdecea;
+  color: var(--danger);
+  border: 1px solid #f5c6c0;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #d5dbf0;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  color: #14603c;
+  background: #d9f2e4;
+}
+
+.badge-info {
+  color: #1d4f91;
+  background: #dbe9fb;
+}
+
+.badge-warn {
+  color: #7a5208;
+  background: #fdf0d3;
+}
+
+.badge-danger {
+  color: #a03225;
+  background: #fde0dc;
+}
+
+.badge-muted {
+  color: #5b6478;
+  background: #e9ecf3;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.form-note {
+  color: #1e7a4f;
+  font-size: 13px;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+.list-item a {
+  color: var(--primary-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.list-item a:hover {
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.stat strong {
+  display: block;
+  font-size: 28px;
+  margin-top: 8px;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.pipeline-column h2 {
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pipeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pipeline-item {
+  background: #f6f8fd;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: block;
+}
+
+.table th,
+.table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #edf0f7;
+  font-size: 13px;
+  text-align: left;
+}
+
+.table th {
+  background: #f6f8fd;
+  color: #4a5268;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #3bc5eb, #7655f4);
+}
+
+.login-card {
+  width: 360px;
+  display: grid;
+  gap: 14px;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.answer-card {
+  margin-top: 18px;
+}
+
+.answer-text {
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .content {
+    padding: 20px;
+  }
+}

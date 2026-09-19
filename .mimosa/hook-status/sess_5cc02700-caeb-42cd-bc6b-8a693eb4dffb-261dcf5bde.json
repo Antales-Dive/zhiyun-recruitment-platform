@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-09-14T02:43:00.225Z",
+  "sessionId": "sess_5cc02700-caeb-42cd-bc6b-8a693eb4dffb",
+  "event": "PostToolUse",
+  "toolName": "Edit",
+  "file": "apps/api/tests/e2e/test_interview_reconnect.py",
+  "outcome": "clear",
+  "coverage": "complete",
+  "findingCount": 0,
+  "durationMs": 9,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}

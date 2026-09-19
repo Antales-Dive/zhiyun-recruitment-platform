@@ -1,0 +1,17 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app
+
+RUN groupadd --gid 10001 app && useradd --uid 10001 --gid 10001 --no-create-home app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app ./app
+
+RUN chown -R app:app /app && mkdir -p /data/uploads && chown -R app:app /data
+USER app
+
+# Worker 无 HTTP 端口；健康检查探测进程存在性即可（存活证明由 Compose 负责）
+CMD ["python", "-m", "app.workers.main"]

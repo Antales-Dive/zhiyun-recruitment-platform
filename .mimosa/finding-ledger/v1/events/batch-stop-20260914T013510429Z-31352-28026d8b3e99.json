@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260914T013510429Z-31352-28026d8b3e99",
+  "runId": "20260914T013510429Z-31352-28026d8b3e99",
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": null,
+  "diffHash": "4677f881c75cc92bdc3415cb3f590fca0e0a78e614fc68a977e0f9a2c2cbbf83",
+  "rulesVersion": "unavailable",
+  "sessionHash": "261dcf5bde6af8e03771ccb81eb65f2ba377174920339eb9c351aa350de2a506",
+  "reportRef": ".mimosa/reports/task-review-sess_5cc02700-caeb-42cd-bc6b-8a693eb4dffb-20260914T013510429Z-31352-28026d8b3e99.json",
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "apps/api/alembic/versions/0011_interviews.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "apps/api/app/domains/interviews/service.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "apps/api/app/orchestration/interview_graph.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "apps/api/app/api/v1/interview_routes.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "apps/api/tests/integration/test_interview_flow.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-09-14T01:35:10.765Z"
+}

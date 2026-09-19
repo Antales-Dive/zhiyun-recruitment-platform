@@ -1,0 +1,50 @@
+/** 仪表盘：事实库可计算计数（FR-034）。 */
+import { useEffect, useState } from "react";
+import { api, isAbortError } from "../../api/client";
+import { ErrorState, LoadingState, PageHeader } from "../../components/states";
+
+interface DashboardFacts {
+  total: number;
+  today_new: number;
+  parsed: number;
+  pending: number;
+  failed: number;
+}
+
+export function DashboardPage() {
+  const [facts, setFacts] = useState<DashboardFacts | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    api<DashboardFacts>("/api/v1/dashboard", { signal: controller.signal })
+      .then(setFacts)
+      .catch((err) => {
+        if (!isAbortError(err)) setError(err instanceof Error ? err.message : "加载失败");
+      });
+    return () => controller.abort();
+  }, []);
+
+  if (error) return <ErrorState message={error} />;
+  if (!facts) return <LoadingState label="加载仪表盘…" />;
+
+  const items = [
+    { label: "候选人总数", value: facts.total },
+    { label: "已解析", value: facts.parsed },
+    { label: "处理中", value: facts.pending },
+    { label: "失败", value: facts.failed },
+  ];
+  return (
+    <section>
+      <PageHeader title="仪表盘" />
+      <div className="stat-grid">
+        {items.map((item) => (
+          <div className="card stat" key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}

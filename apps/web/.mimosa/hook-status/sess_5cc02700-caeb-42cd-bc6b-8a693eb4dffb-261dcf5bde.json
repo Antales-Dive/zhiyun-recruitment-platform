@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-09-14T01:51:50.085Z",
+  "sessionId": "sess_5cc02700-caeb-42cd-bc6b-8a693eb4dffb",
+  "event": "PostToolUse",
+  "toolName": "Write",
+  "file": "E:\\develop\\program\\zhiyun-recruitment-platform\\apps\\api\\app\\api\\v1\\dashboard_routes.py",
+  "outcome": "inconclusive",
+  "coverage": "partial",
+  "findingCount": 0,
+  "durationMs": 6,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}
