@@ -16,7 +16,15 @@ from app.domains.interviews.service import (
 )
 from app.infrastructure import models  # noqa: F401
 from app.infrastructure.db import Base, SessionLocal, engine
-from app.infrastructure.models import Candidate, InterviewMessage, InterviewSession, Job, ResumeVersion
+from app.infrastructure.model_gateway import ModelNotConfiguredError
+from app.infrastructure.models import (
+    Candidate,
+    InterviewMessage,
+    InterviewSession,
+    Job,
+    ModelRun,
+    ResumeVersion,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -203,27 +211,77 @@ class TestInterviewGraphGuard:
                 max_rounds=3,
             )
 
+    @staticmethod
+    def _question(content):
+        return json.dumps({"action": "question", "content": content, "done": False})
+
+    class _ReplyGateway:
+        """桩 Provider：回放出站 messages，便于断言提示词内容。"""
+
+        def __init__(self, content):
+            self.content = content
+            self.prompts = []
+
+        def is_configured(self):
+            return True
+
+        def chat(self, messages, *, timeout_seconds=60):
+            self.prompts.append(messages)
+            return type("R", (), {"content": self.content})()
+
     def test_sensitive_attribute_question_rejected(self, db, prepared):
         from app.infrastructure.model_gateway import ProviderInvalidResponseError
         from app.orchestration.interview_graph import build_next_action
 
-        class StubGateway:
-            def is_configured(self):
-                return True
+        gateway = self._ReplyGateway(self._question("请问你的年龄和婚育情况？"))
 
-            def chat(self, messages, *, timeout_seconds=60):
-                payload = {"action": "question", "content": "请问你的年龄和婚育情况？", "done": False}
-                return type("R", (), {"content": json.dumps(payload)})()
-
-        with pytest.raises(ProviderInvalidResponseError, match="敏感属性"):
+        with pytest.raises(ProviderInvalidResponseError, match="命中禁问项"):
             build_next_action(
-                StubGateway(),
+                gateway,
                 plan={"questions": ["q1"]},
                 questions_asked=[],
                 messages=[],
                 round_number=1,
                 max_rounds=3,
             )
+
+    def test_plan_forbidden_term_is_enforced(self, db, prepared):
+        """HR 在计划里配置的禁问项必须真正生效（此前只写库不拦截）。"""
+        from app.infrastructure.model_gateway import ProviderInvalidResponseError
+        from app.orchestration.interview_graph import build_next_action
+
+        gateway = self._ReplyGateway(self._question("上家公司的加班强度如何？"))
+
+        with pytest.raises(ProviderInvalidResponseError, match="加班"):
+            build_next_action(
+                gateway,
+                plan={"questions": ["q1"], "forbidden": ["加班强度"]},
+                questions_asked=[],
+                messages=[],
+                round_number=1,
+                max_rounds=3,
+            )
+
+    def test_plan_forbidden_term_reaches_prompt(self, db, prepared):
+        from app.orchestration.interview_graph import SENSITIVE_ATTRIBUTES, build_next_action
+
+        gateway = self._ReplyGateway(self._question("讲讲你的项目"))
+
+        action = build_next_action(
+            gateway,
+            plan={"questions": ["q1"], "forbidden": ["加班强度", "  ", "通勤距离", "加班强度"]},
+            questions_asked=[],
+            messages=[],
+            round_number=1,
+            max_rounds=3,
+        )
+
+        assert action["action"] == "question"
+        system = gateway.prompts[0][0]["content"]
+        assert "加班强度" in system and "通勤距离" in system
+        assert all(attr in system for attr in SENSITIVE_ATTRIBUTES)
+        # 空白项被丢弃：否则空串是任意文本的子串，会拦掉所有问题。
+        assert system.count("加班强度") == 1
 
     def test_wrap_up_when_rounds_exhausted(self, db, prepared):
         from app.orchestration.interview_graph import build_next_action
@@ -246,3 +304,78 @@ class TestInterviewGraphGuard:
         )
         assert action["action"] == "wrap_up"
         assert action["done"] is True
+
+
+class TestInterviewModelRunAudit:
+    """面试链路的 ModelRun 留痕：runbook 靠 model_runs.status=FAILED 告警。
+
+    断言按"本次调用新增的行"而非全表计数，避免与其它模块共享的模块级数据库
+    中的历史 ModelRun 干扰。
+    """
+
+    class _StubGateway:
+        def __init__(self, content):
+            self.content = content
+
+        def is_configured(self):
+            return True
+
+        def chat(self, messages, *, timeout_seconds=60):
+            return type("R", (), {"content": self.content})()
+
+    class _FailingGateway:
+        def is_configured(self):
+            return True
+
+        def chat(self, messages, *, timeout_seconds=60):
+            raise ModelNotConfiguredError()
+
+    @staticmethod
+    def _new_runs(db, seen_ids, *, status):
+        return [
+            run
+            for run in db.query(ModelRun).filter_by(purpose="interview", status=status).all()
+            if run.id not in seen_ids
+        ]
+
+    def test_successful_reply_records_succeeded_model_run(self, db, prepared, monkeypatch):
+        from app.api.v1 import interview_routes
+
+        session = make_session(db, prepared)
+        _, token = create_invitation(db, session_id=session.id, org_id="org-a")
+        append_candidate_message(db, token=token, client_message_id="msg-audit-1", content="我准备好了")
+        session = resolve_token(db, token)
+        seen_ids = {run.id for run in db.query(ModelRun).all()}
+        content = json.dumps({"action": "question", "content": "讲讲你的项目", "done": False})
+        monkeypatch.setattr(
+            interview_routes, "ModelGateway", lambda *a, **kw: self._StubGateway(content)
+        )
+
+        reply = interview_routes._generate_ai_reply(db, session)
+
+        assert reply["action"] == "question"
+        runs = self._new_runs(db, seen_ids, status="SUCCEEDED")
+        assert len(runs) == 1
+        assert runs[0].org_id == "org-a"
+        assert runs[0].error_code is None
+        assert runs[0].prompt_version == interview_routes.PROMPT_VERSION
+
+    def test_provider_failure_records_failed_model_run(self, db, prepared, monkeypatch):
+        from app.api.v1 import interview_routes
+
+        session = make_session(db, prepared)
+        _, token = create_invitation(db, session_id=session.id, org_id="org-a")
+        append_candidate_message(db, token=token, client_message_id="msg-audit-2", content="我准备好了")
+        session = resolve_token(db, token)
+        seen_ids = {run.id for run in db.query(ModelRun).all()}
+
+        monkeypatch.setattr(interview_routes, "ModelGateway", lambda *a, **kw: self._FailingGateway())
+
+        reply = interview_routes._generate_ai_reply(db, session)
+
+        assert reply == {"error_code": "MODEL_NOT_CONFIGURED"}
+        runs = self._new_runs(db, seen_ids, status="FAILED")
+        assert len(runs) == 1
+        assert runs[0].error_code == "MODEL_NOT_CONFIGURED"
+        assert runs[0].prompt_version == interview_routes.PROMPT_VERSION
+

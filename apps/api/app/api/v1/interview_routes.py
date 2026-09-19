@@ -28,9 +28,15 @@ from app.domains.interviews.service import (
 )
 from app.domains.tasks import stream
 from app.infrastructure.db import get_db
-from app.infrastructure.model_gateway import ModelGateway, ModelNotConfiguredError, ProviderError
-from app.infrastructure.models import Candidate, InterviewMessage, InterviewReport, InterviewSession
-from app.orchestration.interview_graph import build_next_action
+from app.infrastructure.model_gateway import ModelGateway, ProviderError
+from app.infrastructure.models import (
+    Candidate,
+    InterviewMessage,
+    InterviewReport,
+    InterviewSession,
+    ModelRun,
+)
+from app.orchestration.interview_graph import PROMPT_VERSION, build_next_action
 
 router = APIRouter(prefix="/api/v1")
 public_router = APIRouter(prefix="/public")
@@ -285,13 +291,45 @@ def _generate_ai_reply(db: Session, session: InterviewSession) -> dict | None:
             round_number=len(asked) + 1,
             max_rounds=int(plan.get("max_rounds", 8)),
         )
-    except (ModelNotConfiguredError, ProviderError) as exc:
-        return {"error_code": getattr(exc, "code", "MODEL_NOT_CONFIGURED")}
+    except ProviderError as exc:
+        # ProviderError 恒有 code（ModelNotConfiguredError 是其子类），无需 getattr 兜底。
+        # 失败也要留痕：runbook 依赖 model_runs.status=FAILED 告警，静默返回错误码会让
+        # "模型整段时间不可用"在看板上不可见。
+        _record_model_run(db, session, error_code=exc.code)
+        return {"error_code": exc.code}
+    # 先记 ModelRun 再落业务写：成功路径只 flush，随 append_ai_message / complete_session
+    # 的提交一并落库，保证"有 AI 消息必有对应调用留痕"处在同一事务内。
+    _record_model_run(db, session, error_code=None)
     if action["action"] == "wrap_up" or action.get("done"):
         session = complete_session(db, session_id=session.id, org_id=session.org_id)
         return {"action": "wrap_up", "content": action["content"]}
     ai_message = append_ai_message(db, session, action["content"])
     return {"action": action["action"], "content": ai_message.content, "sequence": ai_message.sequence}
+
+
+def _record_model_run(db: Session, session: InterviewSession, *, error_code: str | None) -> None:
+    """一次模型调用一条 ModelRun 元数据（provider/model/prompt_version/结果）。
+
+    与 assistant、matching 侧一致：只记元数据，不记 Prompt 与回答正文，
+    避免调用留痕变成候选人对话内容的第二份存储。
+    latency_ms / token 未记：interview_graph 只回传动作字典，未回传 Provider 元数据。
+    """
+    db.add(
+        ModelRun(
+            org_id=session.org_id,
+            purpose="interview",
+            provider="openai-compatible",
+            model=settings.model_chat_name or "chat",
+            prompt_version=PROMPT_VERSION,
+            status="SUCCEEDED" if error_code is None else "FAILED",
+            error_code=error_code,
+        )
+    )
+    if error_code is None:
+        db.flush()
+    else:
+        # 失败路径没有其它数据库写入，必须自行提交，否则留痕随请求结束一起回滚。
+        db.commit()
 
 
 @public_router.get("/interviews/{token}/events")
