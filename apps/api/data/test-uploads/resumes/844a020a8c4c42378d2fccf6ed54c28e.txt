@@ -1,5 +1,0 @@
-姓名：王强4c19
-邮箱 wangqiang@example.com
-电话 13911112222
-技能：Python、FastAPI、PostgreSQL
-工作经历：5 年 Python 后端开发，负责 RAG 系统与 API 服务

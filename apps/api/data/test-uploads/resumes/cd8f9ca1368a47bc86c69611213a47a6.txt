@@ -1,6 +1,0 @@
-姓名：张三
-邮箱 zhangsan@example.com
-电话 13800138000
-技能：Python、FastAPI
-5 年工作经验
-标记 ebd0a1e4144c45bd8039af08b9ba81e3

@@ -6,5 +6,7 @@ node_modules/
 dist/
 data/*
 !data/.gitkeep
+# 上面的 data/* 锚定在仓库根，不覆盖后端本地运行与测试落盘（SQLite + 上传对象）
+/apps/api/data/
 release/
 .mimosa/
